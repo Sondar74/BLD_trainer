@@ -1,0 +1,923 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Floating Buffer Trainer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root {
+  /* Layout: one drill stage on top (letter pair with the buffer box right beside it, then controls and counters);
+     buffers and recent pairs side by side below; the lettering scheme editor last. */
+  --bg: #eceff3;
+  --surface: #ffffff;
+  --sunken: #f2f5f8;
+  --ink: #121c26;
+  --muted: #556371;
+  --line: #d2d9e1;
+  --accent: #2457d6;
+  --accent-ink: #ffffff;
+  --buf: #ffc233;
+  --buf-ink: #1b1400;
+  --bad: #b3261e;
+  --good: #17753f;
+  --focus: #2457d6;
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e141a;
+    --surface: #161f28;
+    --sunken: #0f171f;
+    --ink: #e8eef4;
+    --muted: #92a1af;
+    --line: #2a3743;
+    --accent: #7ea4ff;
+    --accent-ink: #0b1426;
+    --buf: #f7bf3a;
+    --buf-ink: #1b1400;
+    --bad: #ff8f86;
+    --good: #6fd5a0;
+    --focus: #9dbcff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e141a;
+  --surface: #161f28;
+  --sunken: #0f171f;
+  --ink: #e8eef4;
+  --muted: #92a1af;
+  --line: #2a3743;
+  --accent: #7ea4ff;
+  --accent-ink: #0b1426;
+  --buf: #f7bf3a;
+  --buf-ink: #1b1400;
+  --bad: #ff8f86;
+  --good: #6fd5a0;
+  --focus: #9dbcff;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+}
+.wrap {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding-block: 24px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.6rem, 4.5vw, 2.1rem);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  margin: 0;
+  text-wrap: balance;
+}
+.sub { margin: 6px 0 0; color: var(--muted); }
+h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin: 0;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px;
+  min-width: 0;
+}
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+.small { color: var(--muted); font-size: 0.85rem; }
+
+/* Stage */
+.stage { display: flex; flex-direction: column; gap: 16px; }
+.drill {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 3vw, 28px);
+  min-height: 11rem;
+  padding: 18px 12px;
+  background: var(--sunken);
+  border-radius: 8px;
+}
+.pair {
+  display: flex;
+  gap: 0.3em;
+  max-width: 100%;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: clamp(3.4rem, 16vw, 7.5rem);
+  line-height: 1;
+}
+.pair .l { display: block; overflow-wrap: anywhere; }
+.bufbox {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 5.5rem;
+  max-width: 100%;
+  padding: 10px 16px;
+  text-align: center;
+  background: var(--buf);
+  color: var(--buf-ink);
+  border-radius: 8px;
+}
+.bufbox-k {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.bufbox-v {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: clamp(1.3rem, 5vw, 2rem);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.drill.idle .pair { color: var(--muted); opacity: 0.6; }
+.drill.idle .bufbox { opacity: 0.45; }
+.hint { margin: 0; min-height: 1.4em; text-align: center; color: var(--muted); }
+
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.btn {
+  font: inherit;
+  font-weight: 500;
+  padding: 0.55rem 1rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) { background: var(--sunken); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+.btn.sm { padding: 0.3rem 0.65rem; font-size: 0.85rem; }
+.btn:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+kbd {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  margin-left: 6px;
+  padding: 0 5px;
+  color: var(--muted);
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+}
+.field { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.field input {
+  width: 5.5rem;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  padding: 0.45rem 0.6rem;
+  color: var(--ink);
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.field input.invalid { border-color: var(--bad); }
+.err { color: var(--bad); font-size: 0.85rem; }
+.check { display: flex; align-items: center; gap: 8px; }
+.check input { width: 1rem; height: 1rem; accent-color: var(--accent); }
+.spacer { flex: 1 1 0; }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.stat dt {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.stat dd {
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.7rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.cols { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 820px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+
+/* Buffers */
+.chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 8px;
+}
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.chip:has(input:checked) { border-color: var(--accent); background: var(--sunken); }
+.chip:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+.chip input { accent-color: var(--accent); }
+.chip.disabled { opacity: 0.5; cursor: not-allowed; }
+.chip-name { font-family: var(--font-mono); font-weight: 600; overflow-wrap: anywhere; }
+.chip-n { margin-left: auto; color: var(--muted); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.btn-row { display: flex; gap: 8px; }
+
+/* History */
+.hist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 21rem;
+  overflow: auto;
+}
+.hist li {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.hn { color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.hp { display: flex; gap: 0.6em; font-family: var(--font-mono); font-weight: 600; font-size: 1.15rem; min-width: 0; }
+.hb {
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--buf-ink);
+  background: var(--buf);
+  border-radius: 5px;
+}
+.empty { margin: 0; color: var(--muted); }
+
+/* Scheme */
+.scheme summary { cursor: pointer; font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; }
+.scheme summary .small { font-family: var(--font-body); font-weight: 400; margin-left: 8px; }
+.scheme-body { margin-top: 12px; }
+.help { margin: 0 0 10px; color: var(--muted); }
+code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  padding: 0 4px;
+  background: var(--sunken);
+  border-radius: 4px;
+}
+textarea {
+  display: block;
+  width: 100%;
+  min-height: 14rem;
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+  resize: vertical;
+  color: var(--ink);
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.status { margin: 10px 0 0; font-size: 0.9rem; }
+.status p { margin: 0; }
+.status ul { margin: 6px 0 0; padding-left: 1.1rem; }
+.status .bad { color: var(--bad); font-weight: 500; }
+.status .ok { color: var(--good); font-weight: 500; }
+.status .note { color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Floating Buffer Trainer</h1>
+    <p class="sub">Random letter pairs for the buffers you choose, in your own lettering scheme.</p>
+  </header>
+
+  <section class="card stage" aria-label="Practice">
+    <div class="drill idle" id="drill">
+      <div class="pair" id="pair" role="img" aria-label="No pair yet"><span class="l" id="l1">–</span><span class="l" id="l2">–</span></div>
+      <div class="bufbox"><span class="bufbox-k">Buffer</span><span class="bufbox-v" id="bufName">—</span></div>
+    </div>
+    <p class="hint" id="stageMsg"></p>
+    <div class="controls">
+      <button type="button" class="btn primary" id="startBtn" aria-pressed="false">Start</button>
+      <button type="button" class="btn" id="nextBtn">Next<kbd>Space</kbd></button>
+      <label class="field" for="interval">Every
+        <input id="interval" type="number" inputmode="decimal" min="0.1" max="3600" step="0.1" value="3" aria-describedby="intervalErr">
+        s
+      </label>
+      <span class="err" id="intervalErr" hidden>Enter 0.1 to 3600 seconds.</span>
+      <label class="check" for="avoid"><input type="checkbox" id="avoid" checked> Don't repeat the last pair</label>
+      <span class="spacer"></span>
+      <button type="button" class="btn" id="resetBtn">Reset session</button>
+    </div>
+    <dl class="stats">
+      <div class="stat"><dt>Pairs shown</dt><dd id="statCount">0</dd></div>
+      <div class="stat"><dt>Valid pairs</dt><dd id="statValid">0</dd></div>
+      <div class="stat"><dt>Buffers on</dt><dd id="statBuffers">0</dd></div>
+    </dl>
+  </section>
+
+  <div class="cols">
+    <section class="card" aria-labelledby="bufH">
+      <div class="card-head">
+        <h2 id="bufH">Buffers</h2>
+        <div class="btn-row">
+          <button type="button" class="btn sm" id="allBtn">Select all</button>
+          <button type="button" class="btn sm" id="noneBtn">Clear</button>
+        </div>
+      </div>
+      <ul class="chips" id="chips"></ul>
+      <p class="small" style="margin:12px 0 0">The number beside each buffer is how many ordered pairs it can show.</p>
+    </section>
+
+    <section class="card" aria-labelledby="histH">
+      <div class="card-head">
+        <h2 id="histH">Recent pairs</h2>
+        <span class="small" id="histNote">Last 50</span>
+      </div>
+      <p class="empty" id="histEmpty">Pairs appear here as you practice.</p>
+      <ol class="hist" id="hist" hidden></ol>
+    </section>
+  </div>
+
+  <details class="card scheme" id="schemeBox">
+    <summary>Lettering scheme<span class="small" id="schemeMeta"></span></summary>
+    <div class="scheme-body">
+      <p class="help">Start each buffer with a line <code>Name: letters</code>, the letters of the buffer piece. The lines under it, one piece per line, are the pieces that buffer may use. Separate letters with spaces or commas. The same letters can appear under several buffers; inside one buffer each letter can appear only once. Blank lines and lines starting with <code>#</code> are ignored.</p>
+      <textarea id="schemeText" rows="14" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Buffers and their pieces" aria-describedby="schemeStatus"></textarea>
+      <div class="status" id="schemeStatus" aria-live="polite"></div>
+      <div class="row">
+        <button type="button" class="btn primary" id="applyBtn">Apply scheme</button>
+        <button type="button" class="btn" id="revertBtn">Revert changes</button>
+        <button type="button" class="btn" id="exampleBtn">Load example</button>
+      </div>
+    </div>
+  </details>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var KEY = 'floating-buffer-trainer:v2';
+  var MIN_INTERVAL = 0.1, MAX_INTERVAL = 3600, HISTORY_MAX = 50, MAX_TOKEN = 3, MAX_SHOWN_ERRORS = 8;
+  var EXAMPLE = [
+    '# A buffer line is  Name: letters  (the buffer piece).',
+    '# The lines under it are the pieces that buffer may use.',
+    'UF: A E',
+    'D H',
+    'C I',
+    'N M',
+    'UB: N M',
+    'A E',
+    'C I'
+  ].join('\n');
+
+  function $(id) { return document.getElementById(id); }
+  var el = {
+    drill: $('drill'), pair: $('pair'), l1: $('l1'), l2: $('l2'), bufName: $('bufName'), stageMsg: $('stageMsg'),
+    startBtn: $('startBtn'), nextBtn: $('nextBtn'), interval: $('interval'), intervalErr: $('intervalErr'),
+    avoid: $('avoid'), resetBtn: $('resetBtn'),
+    statCount: $('statCount'), statValid: $('statValid'), statBuffers: $('statBuffers'),
+    chips: $('chips'), allBtn: $('allBtn'), noneBtn: $('noneBtn'),
+    hist: $('hist'), histEmpty: $('histEmpty'),
+    schemeBox: $('schemeBox'), schemeMeta: $('schemeMeta'), text: $('schemeText'), status: $('schemeStatus'),
+    applyBtn: $('applyBtn'), revertBtn: $('revertBtn'), exampleBtn: $('exampleBtn')
+  };
+
+  /* ---------- scheme parsing ---------- */
+
+  // A line with ":" starts a buffer ("Name: letters"). Lines below it are that buffer's target pieces.
+  // Letters may repeat between buffers, never inside one buffer.
+  function parseScheme(text) {
+    var lines = String(text).split(/\r?\n/);
+    var defs = [], errors = [], cur = null, nameLine = Object.create(null);
+    function err(line, msg) { errors.push({ line: line, msg: msg }); }
+
+    function closeBlock() {
+      if (!cur) return;
+      if (!cur.bad && cur.targets.length < 2) {
+        err(cur.line, 'Buffer "' + cur.name + '" needs at least two pieces under it (found ' + cur.targets.length + ').');
+      }
+      defs.push(cur);
+      cur = null;
+    }
+
+    // Returns the valid, unique letters of a line, or null (after reporting) when the line is malformed.
+    function readLetters(ln, body) {
+      var bad = false;
+      if (/^,|,$|,\s*,/.test(body)) {
+        err(ln, 'Stray comma: an entry is empty. Use a single space or comma between letters.');
+        bad = true;
+      }
+      var tokens = body.split(/[\s,]+/).filter(Boolean), letters = [], here = Object.create(null);
+      tokens.forEach(function (t) {
+        if (t.length > MAX_TOKEN) {
+          err(ln, '"' + t + '" is longer than ' + MAX_TOKEN + ' characters. Separate letters with spaces or commas.');
+          bad = true; return;
+        }
+        if (here[t]) { err(ln, 'Letter "' + t + '" appears twice on this line.'); bad = true; return; }
+        here[t] = 1;
+        if (cur.seen[t] !== undefined) {
+          err(ln, 'Letter "' + t + '" is already used in buffer "' + cur.name + '" on line ' + cur.seen[t] + '.');
+          bad = true; return;
+        }
+        cur.seen[t] = ln;
+        letters.push(t);
+      });
+      if (!bad && letters.length < 2) {
+        var hint = (tokens.length === 1 && tokens[0].length > 1) ? ' If "' + tokens[0] + '" is several letters, put spaces between them.' : '';
+        err(ln, 'A piece needs at least 2 letters (found ' + letters.length + ').' + hint);
+        bad = true;
+      }
+      return bad ? null : letters;
+    }
+
+    lines.forEach(function (raw, i) {
+      var ln = i + 1, line = raw.trim();
+      if (!line || line.charAt(0) === '#') return;
+      var ci = line.indexOf(':');
+      if (ci >= 0) {
+        closeBlock();
+        var label = line.slice(0, ci).trim(), rest = line.slice(ci + 1), bad = false;
+        if (!label) { err(ln, 'The buffer name before ":" is empty.'); bad = true; }
+        if (rest.indexOf(':') >= 0) { err(ln, 'Only one ":" is allowed per line.'); bad = true; }
+        if (label && nameLine[label] !== undefined) {
+          err(ln, 'The buffer name "' + label + '" is already used on line ' + nameLine[label] + '.');
+          bad = true;
+        }
+        if (label && nameLine[label] === undefined) nameLine[label] = ln;
+        cur = { name: label || '(unnamed)', line: ln, letters: [], targets: [], seen: Object.create(null), bad: bad };
+        var letters = readLetters(ln, rest.trim());
+        if (letters) cur.letters = letters; else cur.bad = true;
+        return;
+      }
+      if (!cur) {
+        err(ln, 'Start with a buffer line such as "UF: A E". The pieces it may use go on the lines below.');
+        return;
+      }
+      var piece = readLetters(ln, line);
+      if (piece) cur.targets.push({ letters: piece, line: ln });
+      else cur.bad = true;
+    });
+    closeBlock();
+
+    if (!defs.length && !errors.length) err(0, 'The scheme is empty. Start with a buffer line such as "UF: A E".');
+    return { defs: defs, errors: errors };
+  }
+
+  // For every buffer, the letters of its target pieces. A pair (x, y) is valid when x and y sit on different target pieces;
+  // the buffer's own piece is not one of its targets.
+  function buildBufData(defs) {
+    return defs.map(function (d) {
+      var letters = [], pidx = [], S = 0, Q = 0;
+      d.targets.forEach(function (t, k) {
+        t.letters.forEach(function (l) { letters.push(l); pidx.push(k); });
+        S += t.letters.length;
+        Q += t.letters.length * t.letters.length;
+      });
+      return { name: d.name, letters: letters, pidx: pidx, count: S * S - Q, pieces: d.targets.length };
+    });
+  }
+
+  function evaluate(text) {
+    var r = parseScheme(text);
+    return { defs: r.defs, errors: r.errors, bufData: buildBufData(r.defs) };
+  }
+
+  /* ---------- state and storage ---------- */
+
+  var state = {
+    bufData: [], appliedText: '',
+    selected: new Set(), interval: 3, avoid: true,
+    running: false, timer: null, lastAt: 0,
+    count: 0, history: [], lastKey: null, storageOK: true
+  };
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      var d = JSON.parse(raw);
+      return d && typeof d === 'object' ? d : null;
+    } catch (e) { return null; }
+  }
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify({
+        text: state.appliedText,
+        selected: Array.from(state.selected),
+        interval: state.interval,
+        avoid: state.avoid
+      }));
+      state.storageOK = true;
+    } catch (e) { state.storageOK = false; }
+  }
+
+  /* ---------- selection helpers ---------- */
+
+  function activeBuffers() {
+    return state.bufData.filter(function (b) { return b.count > 0 && state.selected.has(b.name); });
+  }
+  function totalValid() {
+    return activeBuffers().reduce(function (s, b) { return s + b.count; }, 0);
+  }
+  function reconcileSelection() {
+    var had = state.selected.size > 0;
+    var ok = state.bufData.filter(function (b) { return b.count > 0; });
+    var names = new Set(ok.map(function (b) { return b.name; }));
+    var keep = new Set(Array.from(state.selected).filter(function (n) { return names.has(n); }));
+    if (had && !keep.size && ok.length) keep.add(ok[0].name);
+    state.selected = keep;
+  }
+  function fmt(n) { return n.toLocaleString(); }
+  function fmtSec(v) { return String(+v.toFixed(3)); }
+  function plural(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
+
+  /* ---------- rendering ---------- */
+
+  function renderBuffers() {
+    el.chips.textContent = '';
+    state.bufData.forEach(function (b, i) {
+      var li = document.createElement('li');
+      var label = document.createElement('label');
+      label.className = 'chip' + (b.count ? '' : ' disabled');
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.id = 'buf-' + i;
+      cb.value = b.name;
+      cb.disabled = !b.count;
+      cb.checked = b.count > 0 && state.selected.has(b.name);
+      var nm = document.createElement('span');
+      nm.className = 'chip-name';
+      nm.textContent = b.name;
+      var n = document.createElement('span');
+      n.className = 'chip-n';
+      n.textContent = fmt(b.count);
+      label.appendChild(cb); label.appendChild(nm); label.appendChild(n);
+      li.appendChild(label);
+      el.chips.appendChild(li);
+    });
+  }
+  function syncChecks() {
+    Array.prototype.forEach.call(el.chips.querySelectorAll('input'), function (cb) {
+      cb.checked = !cb.disabled && state.selected.has(cb.value);
+    });
+  }
+
+  function renderStats() {
+    var total = totalValid();
+    el.statCount.textContent = fmt(state.count);
+    el.statValid.textContent = fmt(total);
+    el.statBuffers.textContent = fmt(activeBuffers().length);
+    el.startBtn.disabled = !total;
+    el.nextBtn.disabled = !total;
+  }
+
+  function renderHistory() {
+    el.hist.textContent = '';
+    var has = state.history.length > 0;
+    el.hist.hidden = !has;
+    el.histEmpty.hidden = has;
+    var frag = document.createDocumentFragment();
+    state.history.forEach(function (h) {
+      var li = document.createElement('li');
+      var n = document.createElement('span'); n.className = 'hn'; n.textContent = '#' + h.n;
+      var p = document.createElement('span'); p.className = 'hp';
+      var a = document.createElement('span'); a.textContent = h.x;
+      var b = document.createElement('span'); b.textContent = h.y;
+      p.appendChild(a); p.appendChild(b);
+      var bb = document.createElement('span'); bb.className = 'hb'; bb.textContent = h.buf;
+      li.appendChild(n); li.appendChild(p); li.appendChild(bb);
+      frag.appendChild(li);
+    });
+    el.hist.appendChild(frag);
+  }
+
+  function showIdle() {
+    el.drill.classList.add('idle');
+    el.l1.textContent = '–'; el.l2.textContent = '–';
+    el.bufName.textContent = '—';
+    el.pair.setAttribute('aria-label', 'No pair yet');
+  }
+
+  function updateStageMsg() {
+    var total = totalValid(), msg;
+    if (!total) msg = 'Select at least one buffer to practice.';
+    else if (state.running) msg = 'New pair every ' + fmtSec(state.interval) + ' s. Space or Next skips ahead.';
+    else if (state.count > 0) msg = 'Paused. Space or Next shows one pair at a time.';
+    else msg = 'Press Start for timed practice, or Space for one pair at a time.';
+    el.stageMsg.textContent = msg;
+  }
+
+  function setRunningUI() {
+    el.startBtn.textContent = state.running ? 'Pause' : 'Start';
+    el.startBtn.setAttribute('aria-pressed', state.running ? 'true' : 'false');
+  }
+
+  /* ---------- drawing a pair ---------- */
+
+  function rand(n) { return Math.floor(Math.random() * n); }
+
+  function pick() {
+    var act = activeBuffers();
+    var total = act.reduce(function (s, b) { return s + b.count; }, 0);
+    if (!total) return null;
+    var cand = null;
+    for (var tries = 0; tries < 60; tries++) {
+      var r = Math.random() * total, b = act[act.length - 1];
+      for (var k = 0; k < act.length; k++) {
+        if (r < act[k].count) { b = act[k]; break; }
+        r -= act[k].count;
+      }
+      var i, j, guard = 0;
+      do { i = rand(b.letters.length); j = rand(b.letters.length); guard++; }
+      while (b.pidx[i] === b.pidx[j] && guard < 100000);
+      cand = { buf: b.name, x: b.letters[i], y: b.letters[j] };
+      cand.key = cand.buf + '\u0001' + cand.x + '\u0001' + cand.y;
+      if (!state.avoid || total < 2 || cand.key !== state.lastKey) return cand;
+    }
+    return cand;
+  }
+
+  function generate() {
+    var p = pick();
+    if (!p) return false;
+    state.count++;
+    state.lastKey = p.key;
+    state.lastAt = performance.now();
+    state.history.unshift({ n: state.count, x: p.x, y: p.y, buf: p.buf });
+    if (state.history.length > HISTORY_MAX) state.history.length = HISTORY_MAX;
+    el.drill.classList.remove('idle');
+    el.l1.textContent = p.x; el.l2.textContent = p.y;
+    el.bufName.textContent = p.buf;
+    el.pair.setAttribute('aria-label', p.x + ' ' + p.y + ', buffer ' + p.buf);
+    renderHistory();
+    renderStats();
+    return true;
+  }
+
+  /* ---------- timer ---------- */
+
+  function schedule(ms) {
+    clearTimeout(state.timer);
+    state.timer = setTimeout(tick, Math.max(0, ms));
+  }
+  function tick() {
+    if (!state.running) return;
+    if (!generate()) { pause(); return; }
+    schedule(state.interval * 1000);
+  }
+  function start() {
+    if (!totalValid()) return;
+    state.running = true;
+    generate();
+    schedule(state.interval * 1000);
+    setRunningUI();
+    updateStageMsg();
+  }
+  function pause() {
+    state.running = false;
+    clearTimeout(state.timer);
+    setRunningUI();
+    updateStageMsg();
+  }
+  function nextManual() {
+    if (!generate()) { updateStageMsg(); return; }
+    if (state.running) schedule(state.interval * 1000);
+    else updateStageMsg();
+  }
+  function resetSession() {
+    state.count = 0; state.history = []; state.lastKey = null;
+    showIdle(); renderHistory(); renderStats();
+    if (state.running) { generate(); schedule(state.interval * 1000); }
+    updateStageMsg();
+  }
+
+  /* ---------- interval ---------- */
+
+  function readInterval() {
+    var raw = el.interval.value, v = Number(raw);
+    var ok = raw !== '' && isFinite(v) && v >= MIN_INTERVAL && v <= MAX_INTERVAL;
+    return ok ? v : null;
+  }
+  el.interval.addEventListener('input', function () {
+    var v = readInterval();
+    el.interval.classList.toggle('invalid', v === null);
+    el.intervalErr.hidden = v !== null;
+    el.interval.setAttribute('aria-invalid', v === null ? 'true' : 'false');
+    if (v === null) return;
+    state.interval = v;
+    save();
+    if (state.running) schedule(state.interval * 1000 - (performance.now() - state.lastAt));
+    updateStageMsg();
+  });
+  el.interval.addEventListener('blur', function () {
+    if (readInterval() === null) el.interval.value = String(state.interval);
+    el.interval.classList.remove('invalid');
+    el.intervalErr.hidden = true;
+    el.interval.setAttribute('aria-invalid', 'false');
+  });
+  el.interval.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') el.interval.blur();
+  });
+
+  /* ---------- scheme editor ---------- */
+
+  function updateSchemeStatus() {
+    var ev = evaluate(el.text.value);
+    var dirty = el.text.value !== state.appliedText;
+    el.status.textContent = '';
+    function line(cls, msg) {
+      var p = document.createElement('p'); p.className = cls; p.textContent = msg; el.status.appendChild(p);
+      return p;
+    }
+    if (ev.errors.length) {
+      line('bad', 'Fix ' + plural(ev.errors.length, 'problem') + ' before applying:');
+      var ul = document.createElement('ul');
+      ev.errors.slice(0, MAX_SHOWN_ERRORS).forEach(function (e) {
+        var li = document.createElement('li');
+        li.textContent = (e.line ? 'Line ' + e.line + ': ' : '') + e.msg;
+        ul.appendChild(li);
+      });
+      if (ev.errors.length > MAX_SHOWN_ERRORS) {
+        var more = document.createElement('li');
+        more.textContent = 'and ' + (ev.errors.length - MAX_SHOWN_ERRORS) + ' more.';
+        ul.appendChild(more);
+      }
+      el.status.appendChild(ul);
+    } else {
+      var nPieces = ev.bufData.reduce(function (s, b) { return s + b.pieces; }, 0);
+      line('ok', plural(ev.bufData.length, 'buffer') + ', ' + plural(nPieces, 'piece') + ' under them. ' + (dirty ? 'Changes not applied yet.' : 'Applied and saved.'));
+    }
+    if (!state.storageOK) line('note', 'This browser is not keeping saved data, so the scheme will reset when you leave the page.');
+    el.applyBtn.disabled = ev.errors.length > 0;
+    el.revertBtn.disabled = !dirty;
+  }
+
+  function updateSchemeMeta() {
+    el.schemeMeta.textContent = plural(state.bufData.length, 'buffer');
+  }
+
+  function installScheme(ev) {
+    state.bufData = ev.bufData;
+    reconcileSelection();
+    state.lastKey = null;
+    renderBuffers();
+    renderStats();
+    updateSchemeMeta();
+    if (state.running && !totalValid()) pause();
+    updateStageMsg();
+  }
+
+  el.text.addEventListener('input', updateSchemeStatus);
+  el.applyBtn.addEventListener('click', function () {
+    var ev = evaluate(el.text.value);
+    if (ev.errors.length) return;
+    state.appliedText = el.text.value;
+    installScheme(ev);
+    save();
+    updateSchemeStatus();
+  });
+  el.revertBtn.addEventListener('click', function () {
+    el.text.value = state.appliedText;
+    updateSchemeStatus();
+  });
+  el.exampleBtn.addEventListener('click', function () {
+    el.text.value = EXAMPLE;
+    updateSchemeStatus();
+  });
+
+  /* ---------- buffer selection ---------- */
+
+  el.chips.addEventListener('change', function (e) {
+    var cb = e.target;
+    if (!cb || cb.type !== 'checkbox') return;
+    if (cb.checked) state.selected.add(cb.value); else state.selected.delete(cb.value);
+    save();
+    renderStats();
+    if (state.running && !totalValid()) pause();
+    updateStageMsg();
+  });
+  el.allBtn.addEventListener('click', function () {
+    state.bufData.forEach(function (b) { if (b.count > 0) state.selected.add(b.name); });
+    syncChecks(); save(); renderStats(); updateStageMsg();
+  });
+  el.noneBtn.addEventListener('click', function () {
+    state.selected.clear();
+    syncChecks(); save(); renderStats();
+    if (state.running) pause();
+    updateStageMsg();
+  });
+
+  /* ---------- controls and keyboard ---------- */
+
+  el.startBtn.addEventListener('click', function () { if (state.running) pause(); else start(); });
+  el.nextBtn.addEventListener('click', nextManual);
+  el.resetBtn.addEventListener('click', resetSession);
+  el.avoid.addEventListener('change', function () { state.avoid = el.avoid.checked; save(); });
+
+  var pointerMode = false;
+  document.addEventListener('pointerdown', function () { pointerMode = true; }, true);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Tab') { pointerMode = false; return; }
+    if (e.key !== ' ' && e.code !== 'Space') return;
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    var t = e.target, tag = t && t.tagName, type = t && t.type;
+    var typing = tag === 'TEXTAREA' || tag === 'SELECT' ||
+      (tag === 'INPUT' && type !== 'checkbox' && type !== 'radio' && type !== 'button') ||
+      (t && t.isContentEditable);
+    if (typing) return;
+    var interactive = tag === 'BUTTON' || tag === 'SUMMARY' || tag === 'A' || tag === 'INPUT';
+    // Keyboard users who tabbed to a control keep its normal space-bar behavior.
+    if (interactive && !pointerMode) return;
+    e.preventDefault();
+    if (interactive && document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    nextManual();
+  });
+
+  /* ---------- init ---------- */
+
+  (function init() {
+    var saved = load();
+    if (saved && typeof saved.avoid === 'boolean') state.avoid = saved.avoid;
+    if (saved && typeof saved.interval === 'number' && saved.interval >= MIN_INTERVAL && saved.interval <= MAX_INTERVAL) state.interval = saved.interval;
+
+    var text = EXAMPLE, hasSaved = false;
+    if (saved && typeof saved.text === 'string' && !evaluate(saved.text).errors.length) {
+      text = saved.text; hasSaved = true;
+    }
+    var ev = evaluate(text);
+
+    state.appliedText = text;
+    state.bufData = ev.bufData;
+    var ok = ev.bufData.filter(function (b) { return b.count > 0; });
+    if (hasSaved && Array.isArray(saved.selected)) {
+      var names = new Set(ok.map(function (b) { return b.name; }));
+      state.selected = new Set(saved.selected.filter(function (n) { return typeof n === 'string' && names.has(n); }));
+    } else if (ok.length) {
+      state.selected = new Set([ok[0].name]);
+    }
+
+    el.text.value = text;
+    el.interval.value = String(state.interval);
+    el.avoid.checked = state.avoid;
+    el.schemeBox.open = !hasSaved;
+
+    renderBuffers();
+    renderStats();
+    renderHistory();
+    showIdle();
+    setRunningUI();
+    updateSchemeMeta();
+    updateSchemeStatus();
+    updateStageMsg();
+  })();
+})();
+</script>
+
+</body></html>
