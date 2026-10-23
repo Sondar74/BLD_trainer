@@ -418,7 +418,7 @@ textarea {
   <details class="card scheme" id="schemeBox">
     <summary>Lettering scheme<span class="small" id="schemeMeta"></span></summary>
     <div class="scheme-body">
-      <p class="help">Start each buffer with a line <code>Name: letters</code>, the letters of the buffer piece. The lines under it, one piece per line, are the pieces that buffer may use. Separate letters with spaces or commas. The same letters can appear under several buffers; inside one buffer each letter can appear only once. Blank lines and lines starting with <code>#</code> are ignored.</p>
+      <p class="help">Start each buffer with a line <code>Name: letters</code>, the letters of the buffer piece. The lines under it, one piece per line, are the pieces that buffer may use. Letters in one line means that those letters belong to the same piece (the program will not generate letter pairs involving letters belonging to one same piece). Separate letters with spaces or commas. The same letters can appear under several buffers. See SPEFFZ(UF) as an example. Use <code>#</code> for comments.</p>
       <textarea id="schemeText" rows="14" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Buffers and their pieces" aria-describedby="schemeStatus"></textarea>
       <div class="status" id="schemeStatus" aria-live="polite"></div>
       <div class="row">
