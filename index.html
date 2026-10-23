@@ -208,6 +208,16 @@ kbd {
 .check { display: flex; align-items: center; gap: 8px; }
 .check input { width: 1rem; height: 1rem; accent-color: var(--accent); }
 .spacer { flex: 1 1 0; }
+.cinputs input[type="color"] {
+  width: 2.6rem;
+  height: 2.1rem;
+  padding: 2px;
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cinputs input[type="color"]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 .stats {
   display: grid;
@@ -262,6 +272,21 @@ kbd {
 .chip-name { font-family: var(--font-mono); font-weight: 600; overflow-wrap: anywhere; }
 .chip-n { margin-left: auto; color: var(--muted); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
 .btn-row { display: flex; gap: 8px; }
+
+.sw { flex: none; width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--line); }
+.bufbox.multi, .hb.multi { color: #fff; }
+.bufbox.multi .bufbox-k, .bufbox.multi .bufbox-v, .hb.multi {
+  -webkit-text-stroke: 0.2em #101418;
+  paint-order: stroke fill;
+}
+.colors { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.colors summary { cursor: pointer; font-weight: 600; }
+.colors .small { margin: 8px 0 0; }
+.crows { list-style: none; margin: 10px 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.crow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.ctag { min-width: 5rem; text-align: center; }
+.cinputs { display: flex; align-items: center; gap: 6px; }
+.crow .btn.sm { padding: 0.2rem 0.6rem; min-width: 2rem; }
 
 /* History */
 .hist {
@@ -338,8 +363,8 @@ textarea {
 
   <section class="card stage" aria-label="Practice">
     <div class="drill idle" id="drill">
+      <div class="bufbox" id="bufBox"><span class="bufbox-k">Buffer</span><span class="bufbox-v" id="bufName">—</span></div>
       <div class="pair" id="pair" role="img" aria-label="No pair yet"><span class="l" id="l1">–</span><span class="l" id="l2">–</span></div>
-      <div class="bufbox"><span class="bufbox-k">Buffer</span><span class="bufbox-v" id="bufName">—</span></div>
     </div>
     <p class="hint" id="stageMsg"></p>
     <div class="controls">
@@ -372,6 +397,12 @@ textarea {
       </div>
       <ul class="chips" id="chips"></ul>
       <p class="small" style="margin:12px 0 0">The number beside each buffer is how many ordered pairs it can show.</p>
+      <details class="colors" id="colorsBox">
+        <summary>Buffer colors</summary>
+        <p class="small">Give each buffer 1 to 3 colors. With more than one, the buffer box is striped.</p>
+        <ul class="crows" id="colorRows"></ul>
+        <div class="btn-row"><button type="button" class="btn sm" id="colorsReset">Reset all colors</button></div>
+      </details>
     </section>
 
     <section class="card" aria-labelledby="histH">
@@ -408,13 +439,125 @@ textarea {
   var EXAMPLE = [
     '# A buffer line is  Name: letters  (the buffer piece).',
     '# The lines under it are the pieces that buffer may use.',
-    'UF: A E',
+    'UF: X Z',
+    'A E',
     'D H',
     'C I',
     'N M',
-    'UB: N M',
+    'B G',
+    'L O',
+    'P K',
+    'Y V',
+    'R S',
+    'F U',
+    'T J',
+    'FR: X Z',
+    'N M',
+    'P K',
+    'Y V',
+    'R S',
+    'F U',
+    'J T',
+    'FL:X Z',
+    'P K',
+    'Y V',
+    'R S',
+    'F U',
+    'J T',
+    'BR:X Z',
+    'Y V',
+    'R S',
+    'F U',
+    'J T',
+    'BL:X Z',
+    'Y V',
+    'F U',
+    'J T',
+    'UL:X Z',
+    'N M',
+    'P K',
+    'Y V',
+    'R S',
+    'F U',
+    'J T',
+    'L O',
+    'B G',
+    'FDR:X Y Z',
+    'P K V',
+    'R S D',
+    'M N T',
+    'FDL:X Y Z',
+    'P K V',
+    'R S D',
+    'UBR:X Y Z',
+    'U L O',
+    'P K V',
+    'R S D',
+    'M N T',
+    'Ufr:Q X 1',
+    'A B C',
+    'F W N L',
+    'Y I P O',
+    'J H R K',
+    'G E M S',
+    'T U V D',
+    'UFr(W):1 2 3',
+    'A AA',
+    'B BB',
+    'C CC',
+    'F FF',
+    'W WW',
+    'N NN',
+    'L LL',
+    'Y YY',
+    'I II',
+    'P PP',
+    'O OO',
+    'J JJ',
+    'H HH',
+    'R RR',
+    'K KK',
+    'G GG',
+    'E EE',
+    'M MM',
+    'S SS',
+    'T TT',
+    'U UU',
+    'V VV',
+    'D DD',
+    'UB: X Z',
     'A E',
-    'C I'
+    'C I',
+    'N M',
+    'B G',
+    'L O',
+    'P K',
+    'Y V',
+    'R S',
+    'F U',
+    'T J',
+    'UR: X Z',
+    'A E',
+    'N M',
+    'B G',
+    'L O',
+    'P K',
+    'Y V',
+    'R S',
+    'F U',
+    'T J',
+    'SPEFFZ(E): C I',
+    'D E',
+    'B M',
+    'A Q',
+    'F L',
+    'J P',
+    'N T',
+    'R H',
+    'G X',
+    'K U',
+    'O V',
+    'S W'
   ].join('\n');
 
   function $(id) { return document.getElementById(id); }
@@ -426,8 +569,117 @@ textarea {
     chips: $('chips'), allBtn: $('allBtn'), noneBtn: $('noneBtn'),
     hist: $('hist'), histEmpty: $('histEmpty'),
     schemeBox: $('schemeBox'), schemeMeta: $('schemeMeta'), text: $('schemeText'), status: $('schemeStatus'),
-    applyBtn: $('applyBtn'), revertBtn: $('revertBtn'), exampleBtn: $('exampleBtn')
+    applyBtn: $('applyBtn'), revertBtn: $('revertBtn'), exampleBtn: $('exampleBtn'),
+    bufBox: $('bufBox'), colorRows: $('colorRows'), colorsReset: $('colorsReset')
   };
+
+  /* ---------- buffer colors ---------- */
+
+  var PALETTE = ['#ffc233', '#4ea1ff', '#ff6b6b', '#4cc38a', '#b184ff', '#ff9a3c', '#2dd4d4', '#f06eaa'];
+  var MAX_COLORS = 3;
+
+  // Distinct extra colors for schemes with more buffers than the palette has entries.
+  function hslHex(h, sat, l) {
+    h = ((h % 360) + 360) % 360;
+    var a = sat * Math.min(l, 1 - l);
+    function f(n) {
+      var k = (n + h / 30) % 12;
+      var v = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+      return ('0' + Math.round(v * 255).toString(16)).slice(-2);
+    }
+    return '#' + f(0) + f(8) + f(4);
+  }
+
+  function validHex(c) { return typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c); }
+
+  // Dark or light text, whichever reads better on a single color (WCAG relative luminance).
+  function inkFor(hex) {
+    var c = [1, 3, 5].map(function (i) {
+      var v = parseInt(hex.slice(i, i + 2), 16) / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    var L = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    return L > 0.179 ? '#14110a' : '#ffffff';
+  }
+
+  // The colors of a buffer: its saved choice, otherwise one color from the palette by position.
+  function colorsFor(name) {
+    var c = state.colors[name];
+    if (Array.isArray(c) && c.length >= 1 && c.length <= MAX_COLORS && c.every(validHex)) return c;
+    var idx = 0;
+    for (var i = 0; i < state.bufData.length; i++) if (state.bufData[i].name === name) { idx = i; break; }
+    return [idx < PALETTE.length ? PALETTE[idx] : hslHex(idx * 137.508, 0.65, 0.58)];
+  }
+
+  // Equal vertical bands, left to right, with hard edges.
+  function bandCss(cols) {
+    if (cols.length === 1) return cols[0];
+    var n = cols.length, stops = cols.map(function (c, i) {
+      return c + ' ' + (i * 100 / n) + '% ' + ((i + 1) * 100 / n) + '%';
+    });
+    return 'linear-gradient(90deg, ' + stops.join(', ') + ')';
+  }
+  function styleTag(node, cols) {
+    node.style.background = bandCss(cols);
+    node.classList.toggle('multi', cols.length > 1);
+    node.style.color = cols.length > 1 ? '' : inkFor(cols[0]);
+  }
+  function setBox(name) {
+    state.currentBuf = name;
+    var shown = name || (state.bufData[0] && state.bufData[0].name);
+    styleTag(el.bufBox, colorsFor(shown));
+  }
+
+  function setColors(name, cols) {
+    state.colors[name] = cols;
+    save();
+    renderBuffers();
+    renderHistory();
+    setBox(state.currentBuf);
+  }
+
+  function renderColorRows() {
+    el.colorRows.textContent = '';
+    state.bufData.forEach(function (b) {
+      var cols = colorsFor(b.name).slice();
+      var row = document.createElement('li'); row.className = 'crow';
+      var tag = document.createElement('span'); tag.className = 'hb ctag'; tag.textContent = b.name;
+      styleTag(tag, cols);
+      var inputs = document.createElement('span'); inputs.className = 'cinputs';
+      cols.forEach(function (c, k) {
+        var inp = document.createElement('input');
+        inp.type = 'color'; inp.value = c;
+        inp.setAttribute('aria-label', 'Color ' + (k + 1) + ' of buffer ' + b.name);
+        inp.addEventListener('input', function () {
+          var cur = colorsFor(b.name).slice();
+          cur[k] = inp.value.toLowerCase();
+          setColors(b.name, cur);
+          styleTag(tag, cur);
+        });
+        inputs.appendChild(inp);
+      });
+      var minus = document.createElement('button');
+      minus.type = 'button'; minus.className = 'btn sm'; minus.textContent = '−';
+      minus.setAttribute('aria-label', 'Remove a color from buffer ' + b.name);
+      minus.disabled = cols.length <= 1;
+      minus.addEventListener('click', function () {
+        var cur = colorsFor(b.name).slice(); cur.pop();
+        setColors(b.name, cur); renderColorRows();
+      });
+      var plus = document.createElement('button');
+      plus.type = 'button'; plus.className = 'btn sm'; plus.textContent = '+';
+      plus.setAttribute('aria-label', 'Add a color to buffer ' + b.name);
+      plus.disabled = cols.length >= MAX_COLORS;
+      plus.addEventListener('click', function () {
+        var cur = colorsFor(b.name).slice();
+        var next = PALETTE.filter(function (p) { return cur.indexOf(p) < 0; })[0] || '#888888';
+        cur.push(next);
+        setColors(b.name, cur); renderColorRows();
+      });
+      row.appendChild(tag); row.appendChild(inputs); row.appendChild(minus); row.appendChild(plus);
+      el.colorRows.appendChild(row);
+    });
+  }
 
   /* ---------- scheme parsing ---------- */
 
@@ -533,7 +785,7 @@ textarea {
 
   var state = {
     bufData: [], appliedText: '',
-    selected: new Set(), interval: 3, avoid: true,
+    selected: new Set(), interval: 3, avoid: true, colors: {}, currentBuf: null,
     running: false, timer: null, lastAt: 0,
     count: 0, history: [], lastKey: null, storageOK: true
   };
@@ -552,7 +804,8 @@ textarea {
         text: state.appliedText,
         selected: Array.from(state.selected),
         interval: state.interval,
-        avoid: state.avoid
+        avoid: state.avoid,
+        colors: state.colors
       }));
       state.storageOK = true;
     } catch (e) { state.storageOK = false; }
@@ -592,13 +845,16 @@ textarea {
       cb.value = b.name;
       cb.disabled = !b.count;
       cb.checked = b.count > 0 && state.selected.has(b.name);
+      var sw = document.createElement('span');
+      sw.className = 'sw';
+      sw.style.background = bandCss(colorsFor(b.name));
       var nm = document.createElement('span');
       nm.className = 'chip-name';
       nm.textContent = b.name;
       var n = document.createElement('span');
       n.className = 'chip-n';
       n.textContent = fmt(b.count);
-      label.appendChild(cb); label.appendChild(nm); label.appendChild(n);
+      label.appendChild(cb); label.appendChild(sw); label.appendChild(nm); label.appendChild(n);
       li.appendChild(label);
       el.chips.appendChild(li);
     });
@@ -632,6 +888,7 @@ textarea {
       var b = document.createElement('span'); b.textContent = h.y;
       p.appendChild(a); p.appendChild(b);
       var bb = document.createElement('span'); bb.className = 'hb'; bb.textContent = h.buf;
+      styleTag(bb, colorsFor(h.buf));
       li.appendChild(n); li.appendChild(p); li.appendChild(bb);
       frag.appendChild(li);
     });
@@ -642,6 +899,7 @@ textarea {
     el.drill.classList.add('idle');
     el.l1.textContent = '–'; el.l2.textContent = '–';
     el.bufName.textContent = '—';
+    setBox(null);
     el.pair.setAttribute('aria-label', 'No pair yet');
   }
 
@@ -695,6 +953,7 @@ textarea {
     el.drill.classList.remove('idle');
     el.l1.textContent = p.x; el.l2.textContent = p.y;
     el.bufName.textContent = p.buf;
+    setBox(p.buf);
     el.pair.setAttribute('aria-label', p.x + ' ' + p.y + ', buffer ' + p.buf);
     renderHistory();
     renderStats();
@@ -808,6 +1067,7 @@ textarea {
     reconcileSelection();
     state.lastKey = null;
     renderBuffers();
+    renderColorRows();
     renderStats();
     updateSchemeMeta();
     if (state.running && !totalValid()) pause();
@@ -860,6 +1120,12 @@ textarea {
   el.nextBtn.addEventListener('click', nextManual);
   el.resetBtn.addEventListener('click', resetSession);
   el.avoid.addEventListener('change', function () { state.avoid = el.avoid.checked; save(); });
+  el.colorsReset.addEventListener('click', function () {
+    state.colors = {};
+    save();
+    renderColorRows();
+    renderBuffers(); renderHistory(); setBox(state.currentBuf);
+  });
 
   var pointerMode = false;
   document.addEventListener('pointerdown', function () { pointerMode = true; }, true);
@@ -885,6 +1151,12 @@ textarea {
   (function init() {
     var saved = load();
     if (saved && typeof saved.avoid === 'boolean') state.avoid = saved.avoid;
+    if (saved && saved.colors && typeof saved.colors === 'object') {
+      Object.keys(saved.colors).forEach(function (k) {
+        var c = saved.colors[k];
+        if (Array.isArray(c) && c.length >= 1 && c.length <= MAX_COLORS && c.every(validHex)) state.colors[k] = c.map(function (x) { return x.toLowerCase(); });
+      });
+    }
     if (saved && typeof saved.interval === 'number' && saved.interval >= MIN_INTERVAL && saved.interval <= MAX_INTERVAL) state.interval = saved.interval;
 
     var text = EXAMPLE, hasSaved = false;
@@ -909,6 +1181,7 @@ textarea {
     el.schemeBox.open = !hasSaved;
 
     renderBuffers();
+    renderColorRows();
     renderStats();
     renderHistory();
     showIdle();
