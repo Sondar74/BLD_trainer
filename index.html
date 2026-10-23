@@ -1274,4 +1274,27 @@ textarea {
 })();
 </script>
 
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const helpToggle = document.getElementById("helpToggle");
+    const helpPanel = document.getElementById("helpPanel");
+
+    if (!helpToggle || !helpPanel) {
+      console.error("Help button or instructions panel not found.");
+      return;
+    }
+
+    helpToggle.addEventListener("click", () => {
+      const isOpening = helpPanel.hidden;
+
+      helpPanel.hidden = !isOpening;
+      helpToggle.textContent = isOpening
+        ? "Hide instructions ▲"
+        : "How to use ▼";
+
+      helpToggle.setAttribute("aria-expanded", String(isOpening));
+    });
+  });
+</script>
+
 </body></html>
