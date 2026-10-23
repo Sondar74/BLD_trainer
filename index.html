@@ -355,16 +355,92 @@ textarea {
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 12px; }
 </style>
 
+
 <div class="wrap">
   <header>
-  <h1>Floating Buffer Trainer</h1>
-  <p class="sub">A random letter pairs generator for the buffer(s) you choose, in your own lettering scheme.</p>
-  <p class="sub">
-    To practice 3-style, select <strong>SPEFFZ (UF)</strong> and choose the
-    <strong>UF</strong> buffer. You can customize your lettering scheme in the
-    <strong>Lettering Scheme</strong> section.
+    <h1>Floating Buffer Trainer</h1>
+    <p class="sub">
+      A random letter pairs generator for the buffer(s) you choose,
+      in your own lettering scheme.
+    </p>
+    <p class="sub">
+      To practice 3-style, select <strong>SPEFFZ (UF)</strong> and choose
+      the <strong>UF</strong> buffer. You can customize your lettering
+      scheme in the <strong>Lettering Scheme</strong> section.
+    </p>
+
+    <button
+      id="helpToggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="helpPanel"
+    >
+      How to use ▼
+    </button>
+  </header>
+
+  
+<section id="helpPanel" hidden>
+  <h2>How to use Floating Buffer Trainer</h2>
+
+  <ol>
+    <li>
+      <strong>Choose your buffer(s).</strong>
+      Select the buffer or buffers you want to practice.
+    </li>
+    <li>
+      <strong>Set your lettering scheme.</strong>
+      In the Lettering Scheme section, enter the letters corresponding
+      to your sticker positions.
+    </li>
+    <li>
+      <strong>Start practicing.</strong>
+      Set your timer and start the session to practice random letter pairs
+      for your selected buffer(s).
+    </li>
+    <li>
+      <strong>Practice 3-style.</strong>
+      Select <strong>SPEFFZ (UF)</strong> as your lettering scheme and
+      choose the <strong>UF</strong> buffer.
+    </li>
+  </ol>
+
+  <hr>
+
+  <h2>Training Tips</h2>
+
+  <h3>1. Practice your letter pairs</h3>
+  <p>
+    Set the timer to <strong>2 seconds</strong> and press
+    <strong>Start</strong>. Whenever a letter pair appears, try to recall
+    the word you associate with that pair in your mind before the next
+    pair appears. Repeat this for every pair throughout the session.
   </p>
-</header>
+  <p>
+    If you struggle to recall a particular pair, stop the session and
+    consult your letter list. Once you have reviewed it, return to
+    practicing. <strong>Just one minute of practice a day can make
+    a difference!</strong>
+  </p>
+
+  <h3>2. Learn 3-style commutators</h3>
+  <p>
+    Select the <strong>SPEFFZ</strong> lettering scheme and set the timer
+    to <strong>6 seconds</strong>. Whenever a new letter pair appears,
+    execute the corresponding commutator on your cube, followed by its
+    inverse. Repeat this for every letter pair displayed.
+  </p>
+  <p>
+    Adjust the timer to suit your pace. As you become more comfortable
+    with the commutators, challenge yourself by gradually reducing the
+    time.
+  </p>
+</section>
+
+
+  <!-- Keep the rest of your existing tool here, below this point. -->
+
+</div>
 
   <section class="card stage" aria-label="Practice">
     <div class="drill idle" id="drill">
