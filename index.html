@@ -460,7 +460,7 @@ textarea {
 </p>
   <h3>4. Future work</h3>
  <p>
-  Incorporate <strong>LTCt</strong> with brackets notation. 
+  Use a buffer whose name starts with <strong>LTCT</strong> to enable bracket notation and the LTCT target restriction. 
 </p>
   <p>
   Include 4BLD and 5BLD. FB using Speffz. 
@@ -758,34 +758,6 @@ textarea {
     setBox(state.currentBuf);
   }
 
-   // For every buffer, the letters of its target pieces. A pair (x, y) is valid when x and y sit on different target pieces;
-  // the buffer's own piece is not one of its targets.
-  // A buffer whose name starts with LTCT is shown as [A]B. The first letter of each piece line
-  // (the U or D face sticker) can only be the bracketed first letter, never the second.
-  function isLtct(name) { return /^ltct/i.test(name); }
-
-  function buildBufData(defs) {
-    return defs.map(function (d) {
-      var ltct = isLtct(d.name), letters = [], pidx = [], first = [], S = 0, Q = 0, count = 0;
-      d.targets.forEach(function (t, k) {
-        t.letters.forEach(function (l, li) { letters.push(l); pidx.push(k); first.push(li === 0); });
-        S += t.letters.length;
-        Q += t.letters.length * t.letters.length;
-      });
-      if (ltct) {
-        // A target's first letter may appear only in the bracketed position.
-        // For a first letter from one piece, valid second letters are all
-        // non-first letters belonging to the other pieces.
-        d.targets.forEach(function (t) {
-          count += t.letters.length * (S - t.letters.length - (d.targets.length - 1));
-        });
-      } else {
-        count = S * S - Q;
-      }
-      return { name: d.name, letters: letters, pidx: pidx, first: first, ltct: ltct, count: count, pieces: d.targets.length };
-    });
-  }
-
   function renderColorRows() {
     el.colorRows.textContent = '';
     state.bufData.forEach(function (b) {
@@ -910,17 +882,46 @@ textarea {
     return { defs: defs, errors: errors };
   }
 
+  // Add before buildBufData()
+function isLtct(name) {
+  return /^ltct/i.test(name);
+}
+  
+
   // For every buffer, the letters of its target pieces. A pair (x, y) is valid when x and y sit on different target pieces;
   // the buffer's own piece is not one of its targets.
   function buildBufData(defs) {
     return defs.map(function (d) {
-      var letters = [], pidx = [], S = 0, Q = 0;
+      var letters = [], pidx = [], first = [], S = 0, Q = 0;
+      var ltct = isLtct(d.name);
       d.targets.forEach(function (t, k) {
-        t.letters.forEach(function (l) { letters.push(l); pidx.push(k); });
+        t.letters.forEach(function (l, li) {
+          letters.push(l);
+          pidx.push(k);
+          first.push(li === 0);
+        });
         S += t.letters.length;
         Q += t.letters.length * t.letters.length;
       });
-      return { name: d.name, letters: letters, pidx: pidx, count: S * S - Q, pieces: d.targets.length };
+
+      var count = S * S - Q;
+      if (ltct) {
+        // The first letter of each target piece can only be the first (bracketed) letter.
+        count = 0;
+        d.targets.forEach(function (t) {
+          count += t.letters.length * (S - t.letters.length - (d.targets.length - 1));
+        });
+      }
+
+      return {
+        name: d.name,
+        letters: letters,
+        pidx: pidx,
+        first: first,
+        ltct: ltct,
+        count: count,
+        pieces: d.targets.length
+      };
     });
   }
 
@@ -1032,7 +1033,7 @@ textarea {
       var li = document.createElement('li');
       var n = document.createElement('span'); n.className = 'hn'; n.textContent = '#' + h.n;
       var p = document.createElement('span'); p.className = 'hp';
-      var a = document.createElement('span'); a.textContent = h.x;
+      var a = document.createElement('span'); a.textContent = h.ltct ? '[' + h.x + ']' : h.x;
       var b = document.createElement('span'); b.textContent = h.y;
       p.appendChild(a); p.appendChild(b);
       var bb = document.createElement('span'); bb.className = 'hb'; bb.textContent = h.buf;
@@ -1081,9 +1082,16 @@ textarea {
         r -= act[k].count;
       }
       var i, j, guard = 0;
-      do { i = rand(b.letters.length); j = rand(b.letters.length); guard++; }
-      while (b.pidx[i] === b.pidx[j] && guard < 100000);
-      cand = { buf: b.name, x: b.letters[i], y: b.letters[j] };
+      do {
+        i = rand(b.letters.length);
+        j = rand(b.letters.length);
+        guard++;
+      } while (
+        (b.pidx[i] === b.pidx[j] ||
+         (b.ltct && (b.first[j] || b.letters[i] === b.letters[j]))) &&
+        guard < 100000
+      );
+      cand = { buf: b.name, x: b.letters[i], y: b.letters[j], ltct: b.ltct };
       cand.key = cand.buf + '\u0001' + cand.x + '\u0001' + cand.y;
       if (!state.avoid || total < 2 || cand.key !== state.lastKey) return cand;
     }
@@ -1096,13 +1104,13 @@ textarea {
     state.count++;
     state.lastKey = p.key;
     state.lastAt = performance.now();
-    state.history.unshift({ n: state.count, x: p.x, y: p.y, buf: p.buf });
+    state.history.unshift({ n: state.count, x: p.x, y: p.y, buf: p.buf, ltct: p.ltct });
     if (state.history.length > HISTORY_MAX) state.history.length = HISTORY_MAX;
     el.drill.classList.remove('idle');
-    el.l1.textContent = p.x; el.l2.textContent = p.y;
+    el.l1.textContent = p.ltct ? '[' + p.x + ']' : p.x; el.l2.textContent = p.y;
     el.bufName.textContent = p.buf;
     setBox(p.buf);
-    el.pair.setAttribute('aria-label', p.x + ' ' + p.y + ', buffer ' + p.buf);
+    el.pair.setAttribute('aria-label', (p.ltct ? '[' + p.x + ']' + p.y : p.x + ' ' + p.y) + ', buffer ' + p.buf);
     renderHistory();
     renderStats();
     return true;
