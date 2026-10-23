@@ -530,7 +530,7 @@ textarea {
   <details class="card scheme" id="schemeBox">
     <summary>Lettering scheme<span class="small" id="schemeMeta"></span></summary>
     <div class="scheme-body">
-      <p class="help">Start each buffer with a line <code>Name: letters</code>, the letters of the buffer piece. The lines under it, one piece per line, are the pieces that buffer may use. Letters in one line means that those letters belong to the same piece (the program will not generate letter pairs involving letters belonging to one same piece). Separate letters with spaces or commas. The same letters can appear under several buffers. See SPEFFZ(UF) as an example. Use <code>#</code> for comments.</p>
+      <p class="help">Start each buffer with a line <code>Name: letters</code>, the letters of the buffer piece. The lines under it, one piece per line, are the pieces that buffer may use. Letters in one line means that those letters belong to the same piece (the program will not generate letter pairs involving letters belonging to one same piece). Separate letters with spaces or commas. A buffer whose name starts with <code>LTCT</code> is shown as <code>[A]B</code>, and the first letter of each piece line can only be the bracketed one, never the second. The same letters can appear under several buffers. See SPEFFZ(UF) as an example. Use <code>#</code> for comments.</p>
       <textarea id="schemeText" rows="14" wrap="off" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Buffers and their pieces" aria-describedby="schemeStatus"></textarea>
       <div class="status" id="schemeStatus" aria-live="polite"></div>
       <div class="row">
@@ -756,6 +756,34 @@ textarea {
     renderBuffers();
     renderHistory();
     setBox(state.currentBuf);
+  }
+
+   // For every buffer, the letters of its target pieces. A pair (x, y) is valid when x and y sit on different target pieces;
+  // the buffer's own piece is not one of its targets.
+  // A buffer whose name starts with LTCT is shown as [A]B. The first letter of each piece line
+  // (the U or D face sticker) can only be the bracketed first letter, never the second.
+  function isLtct(name) { return /^ltct/i.test(name); }
+
+  function buildBufData(defs) {
+    return defs.map(function (d) {
+      var ltct = isLtct(d.name), letters = [], pidx = [], first = [], S = 0, Q = 0, count = 0;
+      d.targets.forEach(function (t, k) {
+        t.letters.forEach(function (l, li) { letters.push(l); pidx.push(k); first.push(li === 0); });
+        S += t.letters.length;
+        Q += t.letters.length * t.letters.length;
+      });
+      if (ltct) {
+        // A target's first letter may appear only in the bracketed position.
+        // For a first letter from one piece, valid second letters are all
+        // non-first letters belonging to the other pieces.
+        d.targets.forEach(function (t) {
+          count += t.letters.length * (S - t.letters.length - (d.targets.length - 1));
+        });
+      } else {
+        count = S * S - Q;
+      }
+      return { name: d.name, letters: letters, pidx: pidx, first: first, ltct: ltct, count: count, pieces: d.targets.length };
+    });
   }
 
   function renderColorRows() {
